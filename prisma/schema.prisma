@@ -3,7 +3,8 @@
 // To switch to PostgreSQL, change provider to "postgresql" and update DATABASE_URL
 
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "client"
 }
 
 datasource db {

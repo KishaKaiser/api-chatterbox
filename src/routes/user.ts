@@ -112,7 +112,16 @@ router.put("/me", async (req: AuthRequest, res: Response) => {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     })
-  } catch (err) {
+  } catch (err: unknown) {
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: string }).code === "P2025"
+    ) {
+      res.status(404).json({ error: "User not found" })
+      return
+    }
     console.error("PUT /me error", err)
     res.status(500).json({ error: "Internal server error" })
   }

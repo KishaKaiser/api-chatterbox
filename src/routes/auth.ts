@@ -31,8 +31,14 @@ router.post("/register", async (req, res: Response) => {
       res.status(400).json({ error: "password must be at least 6 characters" })
       return
     }
-    if (!email.includes("@")) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       res.status(400).json({ error: "invalid email address" })
+      return
+    }
+
+    const resolvedUsername = (username ?? email.split("@")[0]).trim()
+    if (!resolvedUsername) {
+      res.status(400).json({ error: "username cannot be empty" })
       return
     }
 
@@ -48,7 +54,7 @@ router.post("/register", async (req, res: Response) => {
     const user = await prisma.user.create({
       data: {
         email: email.toLowerCase().trim(),
-        username: (username ?? email.split("@")[0]).trim(),
+        username: resolvedUsername,
         passwordHash,
       },
     })
