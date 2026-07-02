@@ -4,6 +4,7 @@ import rateLimit from "express-rate-limit"
 import authRoutes from "./routes/auth"
 import userRoutes from "./routes/user"
 import chatRoutes from "./routes/chat"
+import publicChatRoutes from "./routes/public-chat"
 
 const app = express()
 const PORT = Number(process.env.PORT) || 4000
@@ -58,6 +59,7 @@ app.get("/health", (_req, res) => {
 app.use("/auth", authLimiter, authRoutes)
 app.use("/", userRoutes)
 app.use("/", chatRoutes)
+app.use("/", publicChatRoutes)
 
 // 404 handler
 app.use((_req, res) => {
