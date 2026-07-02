@@ -57,9 +57,9 @@ app.get("/health", (_req, res) => {
 
 // Routes
 app.use("/auth", authLimiter, authRoutes)
+app.use("/", publicChatRoutes)
 app.use("/", userRoutes)
 app.use("/", chatRoutes)
-app.use("/", publicChatRoutes)
 
 // 404 handler
 app.use((_req, res) => {
