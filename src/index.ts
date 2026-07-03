@@ -7,6 +7,7 @@ import chatRoutes from "./routes/chat"
 import publicChatRoutes from "./routes/public-chat"
 
 const app = express()
+app.set("trust proxy", 1)
 const PORT = Number(process.env.PORT) || 4000
 
 // CORS – allow configured frontend origin(s)
