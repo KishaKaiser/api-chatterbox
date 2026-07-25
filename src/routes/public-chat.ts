@@ -41,7 +41,13 @@ router.post("/public/chat", async (req: Request, res: Response) => {
     const ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: OLLAMA_MODEL, messages: ollamaMessages, stream: false }),
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        messages: ollamaMessages,
+        stream: false,
+        keep_alive: "30m",
+        options: { num_predict: 512 },
+      }),
     })
 
     if (!ollamaRes.ok) {

@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth"
 import userRoutes from "./routes/user"
 import chatRoutes from "./routes/chat"
 import publicChatRoutes from "./routes/public-chat"
+import { prisma } from "./lib/prisma"
 
 const app = express()
 app.set("trust proxy", 1)
@@ -52,8 +53,18 @@ const authLimiter = rateLimit({
 })
 
 // Health check
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() })
+app.get("/health", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    res.json({ status: "ok", database: "connected", timestamp: new Date().toISOString() })
+  } catch (err) {
+    console.error("Database health check failed:", err)
+    res.status(503).json({
+      status: "error",
+      database: "unavailable",
+      timestamp: new Date().toISOString(),
+    })
+  }
 })
 
 // Routes
