@@ -38,6 +38,8 @@ router.post("/chat", requireAuth, async (req: AuthRequest, res: Response) => {
         model: OLLAMA_MODEL,
         messages: ollamaMessages,
         stream: false,
+        keep_alive: "30m",
+        options: { num_predict: 512 },
       }),
     })
 
