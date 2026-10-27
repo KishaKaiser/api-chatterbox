@@ -67,24 +67,49 @@ router.post("/public/chat", async (req: Request, res: Response) => {
       res.status(400).json({ error: "Selected model is not installed. Refresh the model list and choose an installed model." })
       return
     }
-    const ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: ollamaMessages,
-        stream: false,
-        keep_alive: "30m",
-        options: { num_predict: 512 },
-      }),
-    })
-    if (!ollamaRes.ok) {
-      console.error("Ollama error:", ollamaRes.status, await ollamaRes.text())
-      res.status(502).json({ error: "AI service unavailable" })
+    // Retry the original request once with more room; never concatenate a fresh
+    // generation onto an unfinished sentence or return known-truncated content.
+    for (const tokenLimit of [2048, 4096]) {
+      const ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: ollamaMessages,
+          stream: false,
+          keep_alive: "30m",
+          options: { num_predict: tokenLimit },
+        }),
+      })
+      if (!ollamaRes.ok) {
+        console.error("Ollama error:", ollamaRes.status, await ollamaRes.text())
+        res.status(502).json({ error: "AI service unavailable" })
+        return
+      }
+      const data = await ollamaRes.json() as {
+        model?: string
+        done?: boolean
+        done_reason?: string
+        eval_count?: number
+        message?: { content?: string }
+      }
+      const hitTokenLimit = data.done_reason === "length" ||
+        (!data.done_reason && typeof data.eval_count === "number" && data.eval_count >= tokenLimit)
+      if (hitTokenLimit) {
+        if (tokenLimit === 2048) continue
+        res.status(502).json({
+          error: "The AI response reached its length limit after a retry. Please regenerate this section; the incomplete response was not saved.",
+          code: "AI_RESPONSE_TRUNCATED",
+        })
+        return
+      }
+      if (data.done === false || typeof data.message?.content !== "string" || !data.message.content.trim()) {
+        res.status(502).json({ error: "The AI service returned an empty or unfinished response. Please try again." })
+        return
+      }
+      res.json({ content: data.message.content, model: data.model ?? selectedModel })
       return
     }
-    const data = await ollamaRes.json() as { model?: string; message: { content: string } }
-    res.json({ content: data.message.content, model: data.model ?? selectedModel })
   } catch (err) {
     console.error("Public chat error:", err)
     res.status(502).json({ error: "Could not reach AI service" })
